@@ -1,0 +1,222 @@
+############## Created by de.microtema:github-workflow-maven-plugin ############
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
+# Files under .github/workflows folder are generated and should not be edited. #
+################################################################################
+name: '[DEVELOP] hbm2java-maven-plugin Maven Mojo'
+on:
+  push:
+    branches:
+      - develop
+env:
+  APP_NAME: "hbm2java-maven-plugin"
+  APP_DISPLAY_NAME: "hbm2java-maven-plugin Maven Mojo"
+  GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  SONAR_TOKEN: "d44e1870f40de9c4556bb1f507393396721e21aa"
+  JAVA_VERSION: "1.8"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true\
+    \ -DdeployAtEnd=true"
+  CODE_PATHS: ".github/** src/** pom.xml Dockerfile"
+  VERSION: "2.0.1"
+jobs:
+  initialize:
+    name: Initialize
+    runs-on: [ ubuntu-latest ]
+    outputs:
+      code-changed: ${{ steps.code-changed.outputs.changed }}
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 100
+      - uses: marceloprado/has-changed-path@v1
+        id: code-changed
+        with:
+          paths: ${{ env.CODE_PATHS }}
+  versioning:
+    name: Versioning
+    runs-on: [ ubuntu-latest ]
+    needs: [ initialize ]
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v2
+      - name: 'Java: Setup'
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: 'Maven: versions:set'
+        run: |
+          mvn release:update-versions -DdevelopmentVersion=0.0.1-SNAPSHOT $MAVEN_CLI_OPTS
+          mvn versions:set -DnewVersion=$VERSION $MAVEN_CLI_OPTS
+      - name: 'Artifact: prepare'
+        run: |
+          mkdir -p artifact
+          cp pom.xml artifact/pom.xml
+      - name: 'Artifact: upload'
+        uses: actions/upload-artifact@v2
+        with:
+          name: pom-artifact
+          path: artifact/pom.xml
+  compile:
+    name: Compile
+    runs-on: [ ubuntu-latest ]
+    needs: [ versioning ]
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v2
+      - name: 'Java: Setup'
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: 'Artifact: download'
+        if: 'false'
+        uses: actions/download-artifact@v2
+        with:
+          name: pom-artifact
+      - name: 'Maven: versions:set'
+        run: |
+          mvn release:update-versions -DdevelopmentVersion=0.0.1-SNAPSHOT $MAVEN_CLI_OPTS
+          mvn versions:set -DnewVersion=$VERSION $MAVEN_CLI_OPTS
+      - name: 'Maven: compile'
+        run: mvn compile $MAVEN_CLI_OPTS
+  security-check:
+    name: Security Check
+    runs-on: [ ubuntu-latest ]
+    needs: [ compile ]
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v2
+      - name: 'Java: Setup'
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: 'Maven: dependency-check'
+        run: mvn dependency-check:help -P security -Ddownloader.quick.query.timestamp=false $MAVEN_CLI_OPTS
+  unit-test:
+    name: Unit Test
+    runs-on: [ ubuntu-latest ]
+    needs: [ compile ]
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v2
+      - name: 'Java: Setup'
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: 'Artifact: download'
+        if: 'false'
+        uses: actions/download-artifact@v2
+        with:
+          name: pom-artifact
+      - name: 'Maven: versions:set'
+        run: |
+          mvn release:update-versions -DdevelopmentVersion=0.0.1-SNAPSHOT $MAVEN_CLI_OPTS
+          mvn versions:set -DnewVersion=$VERSION $MAVEN_CLI_OPTS
+      - name: 'Maven: test'
+        run: mvn test $MAVEN_CLI_OPTS
+      - name: 'Artifact: prepare'
+        run: |
+          mkdir -p artifact/target/surefire-reports
+          cp -r target/surefire-reports/* artifact/target/surefire-reports/
+          cp -r target/jacoco.exec artifact/target/surefire-reports/
+      - name: 'Test result'
+        uses: actions/upload-artifact@v2
+        with:
+          name: target-artifact
+          path: artifact
+  quality-gate:
+    name: Quality Gate
+    runs-on: [ ubuntu-latest ]
+    needs: [ unit-test ]
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v2
+      - name: 'Java: Setup'
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: 'Artifact: download'
+        uses: actions/download-artifact@v2
+        with:
+          name: target-artifact
+      - name: 'Maven: verify'
+        run: mvn verify -DskipTests=true -Dcode.coverage=0.00 $MAVEN_CLI_OPTS
+      - name: 'Maven: sonar'
+        run: mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN $MAVEN_CLI_OPTS
+  build:
+    name: Build
+    runs-on: [ ubuntu-latest ]
+    needs: [ quality-gate, security-check ]
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v2
+      - name: 'Java: Setup'
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: 'Maven: versions:set'
+        run: |
+          mvn release:update-versions -DdevelopmentVersion=0.0.1-SNAPSHOT $MAVEN_CLI_OPTS
+          mvn versions:set -DnewVersion=$VERSION $MAVEN_CLI_OPTS
+      - name: 'Maven: package'
+        run: mvn package -P prod -Dcode.coverage=0.00 -DskipTests=true $MAVEN_CLI_OPTS
+      - name: 'Artifact: prepare'
+        run: |
+          mkdir -p artifact/target
+          cp target/*.jar artifact/target/
+      - name: 'Artifact: upload'
+        uses: actions/upload-artifact@v2
+        with:
+          name: target-artifact
+          path: artifact
+  package:
+    name: 'Package'
+    runs-on: [ ubuntu-latest ]
+    needs: [ build ]
+    env:
+      DOCKER_REGISTRY: %DOCKER_REGISTRY%
+      DOCKER_REGISTRY_USER: %DOCKER_REGISTRY_USER%
+      DOCKER_REGISTRY_PASSWORD: %DOCKER_REGISTRY_PASSWORD%
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v2
+      - name: 'Java: Setup'
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: 'Artifact: download'
+        uses: actions/download-artifact@v2
+        with:
+          name: target-artifact
+      - name: 'Shell: short sha'
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
+      - name: 'Docker: login'
+        run: docker login -u $DOCKER_REGISTRY_USER -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY
+      - name: 'Docker: build'
+        run: docker build -t $DOCKER_REGISTRY/$APP_NAME:$VERSION .
+      - name: 'Docker: push'
+        run: docker push $DOCKER_REGISTRY/$APP_NAME:$VERSION
+  promote:
+    name: 'Promote'
+    runs-on: [ ubuntu-latest ]
+    needs: [ package ]
+    steps:
+      - name: 'Shell: promote'
+        run: echo 'TBD'
+  deployment:
+    name: '[DEVELOP] Deployment'
+    runs-on: [ ubuntu-latest ]
+    needs: [ promote ]
+    env:
+      DEPLOYMENT_REPOSITORY: %DEPLOYMENT_REPOSITORY%
+      REPO_ACCESS_TOKEN: %REPO_ACCESS_TOKEN%
+    steps:
+      - name: Trigger deployment workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: '[DEVELOP] hbm2java-maven-plugin Maven Mojo'
+          repo: ${{ env.DEPLOYMENT_REPOSITORY }}
+          token: ${{ env.REPO_ACCESS_TOKEN }}
+          ref: master
+          inputs: '{ "version": "${{ env.VERSION }}" }'
