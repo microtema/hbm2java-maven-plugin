@@ -122,6 +122,9 @@ public class JavaTemplate {
         switch (sqlType) {
             case "timestamp":
                 return LocalDateTime.class.getSimpleName();
+            case "bit":
+            case "tinyint":
+                return boolean.class.getSimpleName();
             case "image":
                 return byte[].class.getSimpleName();
             default:
