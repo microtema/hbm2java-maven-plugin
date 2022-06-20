@@ -111,7 +111,7 @@ public class JavaTemplate {
                 return String.class.getSimpleName();
             case "java.lang.Boolean":
             case "java.lang.Short":
-                boolean.class.getSimpleName();
+                return boolean.class.getSimpleName();
             default:
                 return resolveFiledTypeFromSQlType(sqlType);
         }
@@ -122,9 +122,6 @@ public class JavaTemplate {
         switch (sqlType) {
             case "timestamp":
                 return LocalDateTime.class.getSimpleName();
-            case "bit":
-            case "tinyint":
-                return boolean.class.getSimpleName();
             case "image":
                 return byte[].class.getSimpleName();
             default:
