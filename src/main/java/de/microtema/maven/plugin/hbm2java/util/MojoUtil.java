@@ -1,8 +1,11 @@
-package de.microtema.maven.plugin.hbm2java.java.template;
+package de.microtema.maven.plugin.hbm2java.util;
+
+import lombok.experimental.UtilityClass;
 
 import java.io.File;
 
-public class FileUtil {
+@UtilityClass
+public class MojoUtil {
 
     public static String getPackageDirectory(String packageName) {
 
@@ -26,5 +29,10 @@ public class FileUtil {
         }
 
         return str.toString();
+    }
+
+    public static String cleanupTableName(String tableName) {
+
+        return tableName.replace("[", "").replace("]", "").replaceAll(File.separator, "");
     }
 }

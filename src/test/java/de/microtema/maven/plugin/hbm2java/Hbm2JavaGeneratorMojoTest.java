@@ -1,6 +1,6 @@
 package de.microtema.maven.plugin.hbm2java;
 
-import de.microtema.maven.plugin.hbm2java.java.template.FileUtil;
+import de.microtema.maven.plugin.hbm2java.util.MojoUtil;
 import de.microtema.maven.plugin.hbm2java.model.DatabaseConfig;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.project.MavenProject;
@@ -37,7 +37,7 @@ class Hbm2JavaGeneratorMojoTest {
     @Test
     void executeOnNonUpdateFalse() throws Exception {
 
-        String packageDirectory = FileUtil.getPackageDirectory(sut.packageName);
+        String packageDirectory = MojoUtil.getPackageDirectory(sut.packageName);
 
         outputSpecFile = new File(sut.outputDir, packageDirectory);
 

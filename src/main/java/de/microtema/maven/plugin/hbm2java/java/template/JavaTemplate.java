@@ -3,6 +3,7 @@ package de.microtema.maven.plugin.hbm2java.java.template;
 import de.microtema.maven.plugin.hbm2java.model.ColumnDescription;
 import de.microtema.maven.plugin.hbm2java.model.ProjectData;
 import de.microtema.maven.plugin.hbm2java.model.TableDescription;
+import de.microtema.maven.plugin.hbm2java.util.MojoUtil;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.text.WordUtils;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static de.microtema.maven.plugin.hbm2java.java.template.FileUtil.lineSeparator;
+import static de.microtema.maven.plugin.hbm2java.util.MojoUtil.lineSeparator;
 
 
 public class JavaTemplate {
@@ -45,7 +46,7 @@ public class JavaTemplate {
             stringBuilder.append("    ").append(getFieldTemplate(columnDescription, fieldMapping)).append(lineSeparator(2));
         }
 
-        String packageDirectory = FileUtil.getPackageDirectory(projectData.getPackageName());
+        String packageDirectory = MojoUtil.getPackageDirectory(projectData.getPackageName());
 
         String file = String.format("%s%s%s%s.java.template", outputJavaDirectory, File.separator, packageDirectory, tableName);
         System.out.println("Writing Java file " + file);
