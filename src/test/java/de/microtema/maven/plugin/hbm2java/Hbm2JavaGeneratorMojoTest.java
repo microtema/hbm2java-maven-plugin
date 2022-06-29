@@ -43,7 +43,7 @@ class Hbm2JavaGeneratorMojoTest {
 
         DatabaseConfig databaseConfig = new DatabaseConfig();
 
-        sut.tableNames = Arrays.asList("[tesion GmbH$Customer]", "[Versatel Germany$Customer]");
+        sut.tableNames = Arrays.asList("[MT$Customer]", "[DX$Customer]");
         sut.host = databaseConfig.getHost();
         sut.userName = databaseConfig.getUserName();
         sut.password = databaseConfig.getPassword();
@@ -59,17 +59,13 @@ class Hbm2JavaGeneratorMojoTest {
 
         String answer = FileUtils.readFileToString(outputSpecFile, "UTF-8");
 
-        assertEquals("    @Column(name = \"[vtg]\", nullable = false)\n" +
-                "    private String vtg;\n" +
-                "\n", answer);
+        assertEquals("", answer);
 
         outputSpecFile = files[1];
 
         answer = FileUtils.readFileToString(outputSpecFile, "UTF-8");
 
-        assertEquals("    @Column(name = \"[vts]\", nullable = false)\n" +
-                "    private String vts;\n" +
-                "\n", answer);
+        assertEquals("", answer);
 
         outputSpecFile = files[2];
 

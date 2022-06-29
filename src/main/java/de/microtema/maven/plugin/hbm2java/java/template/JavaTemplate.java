@@ -42,6 +42,7 @@ public class JavaTemplate {
                 stringBuilder.append("    ").append(fieldAnnotationTemplate).append(lineSeparator(1));
             }
 
+            stringBuilder.append("    ").append(getColumnJsonAnnotationTemplate(columnDescription)).append(lineSeparator(1));
             stringBuilder.append("    ").append(getColumnAnnotationTemplate(columnDescription)).append(lineSeparator(1));
             stringBuilder.append("    ").append(getFieldTemplate(columnDescription, fieldMapping)).append(lineSeparator(2));
         }
@@ -73,6 +74,13 @@ public class JavaTemplate {
         }
 
         return String.format("@Column(name = \"[%s]\", nullable = false)", name);
+    }
+
+    private static String getColumnJsonAnnotationTemplate(ColumnDescription columnDescription) {
+
+        String name = columnDescription.getName();
+
+        return String.format("@JsonProperty(\"[%s]\")", name);
     }
 
     public static String resolveFiledName(String snakeWord, Map<String, String> fieldMapping) {

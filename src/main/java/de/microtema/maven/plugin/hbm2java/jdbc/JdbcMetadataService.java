@@ -52,6 +52,7 @@ public class JdbcMetadataService {
                 columnDescription.setSqlType(columnSqlTypeName);
                 columnDescription.setRequired(isNullable == 0);
                 columnDescription.setSize(columnDisplaySize);
+                columnDescription.setPrimaryKey(primaryKeys.contains(columnName));
 
                 columnNames.add(columnDescription);
             }
