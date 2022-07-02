@@ -6,8 +6,11 @@ import de.microtema.maven.plugin.hbm2java.model.ColumnDescription;
 import de.microtema.maven.plugin.hbm2java.model.DatabaseConfig;
 import de.microtema.maven.plugin.hbm2java.model.ProjectData;
 import de.microtema.maven.plugin.hbm2java.model.TableDescription;
+import de.microtema.maven.plugin.hbm2java.util.MojoUtil;
 import de.microtema.model.converter.util.ClassUtil;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.WordUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -42,8 +45,14 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
     @Parameter(property = "package-name")
     String packageName = "de.microtema.repository";
 
+    @Parameter(property = "package-name")
+    List<String> interfaceNames = new ArrayList<>();
+
     @Parameter(property = "field-mapping")
     Properties fieldMapping = new Properties();
+
+    @Parameter(property = "domain-name")
+    String domainName;
 
     JdbcMetadataService jdbcMetadataService = ClassUtil.createInstance(JdbcMetadataService.class);
     JavaTemplateService javaTemplateService = ClassUtil.createInstance(JavaTemplateService.class);
@@ -61,6 +70,9 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
             return;
         }
 
+        domainName = Optional.ofNullable(domainName).orElse("Common");
+        domainName = WordUtils.capitalize(domainName);
+
         logMessage("Generate Entities from DDL for " + appName + " -> " + outputDir);
 
         DatabaseConfig databaseConfig = new DatabaseConfig();
@@ -71,12 +83,17 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
 
         List<TableDescription> tableDescriptions = new ArrayList<>();
 
-        for (String tableName : tableNames) {
+        for (String tableNameWithPrefix : tableNames) {
+
+            String prefix = MojoUtil.getNamePrefix(tableNameWithPrefix);
+            String tableName = MojoUtil.getTableName(tableNameWithPrefix);
 
             List<ColumnDescription> columnDescriptions = jdbcMetadataService.getListColumnDescriptions(databaseConfig, tableName);
 
             TableDescription tableDescription = new TableDescription();
-            tableDescription.setName(tableName);
+            tableDescription.setNamePrefix(prefix);
+            tableDescription.setName(StringUtils.trimToEmpty(prefix).toUpperCase() + domainName);
+            tableDescription.setTableName(tableName);
             tableDescription.setColumns(columnDescriptions);
 
             tableDescriptions.add(tableDescription);
@@ -84,9 +101,11 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
 
         ProjectData projectData = new ProjectData();
 
-        projectData.setPackageName(this.packageName);
-        projectData.setFieldMapping(streamConvert(this.fieldMapping));
-        projectData.setOutputJavaDirectory(this.outputDir);
+        projectData.setDomainName(domainName);
+        projectData.setPackageName(packageName);
+        projectData.setFieldMapping(streamConvert(fieldMapping));
+        projectData.setOutputJavaDirectory(outputDir);
+        projectData.setInterfaceNames(interfaceNames);
 
         javaTemplateService.writeJavaTemplates(tableDescriptions, projectData);
     }

@@ -31,8 +31,44 @@ public class MojoUtil {
         return str.toString();
     }
 
+    public static String getNamePrefix(String tableName) {
+
+        String[] parts = tableName.split("\\:");
+
+        if (parts.length == 2) {
+            return parts[0];
+        }
+
+        return null;
+    }
+
+    public static String getTableName(String tableName) {
+
+        String[] parts = tableName.split("\\:");
+
+        if (parts.length == 2) {
+            tableName = parts[1];
+        }
+
+        return tableName;
+    }
+
     public static String cleanupTableName(String tableName) {
 
         return tableName.replace("[", "").replace("]", "").replaceAll(File.separator, "");
+    }
+
+    public static String getClassName(String packageName) {
+
+        String[] parts = packageName.split("\\.");
+
+        return parts[parts.length - 1];
+    }
+
+    public static String cleanupClassName(String className) {
+
+        String[] parts = className.split("<");
+
+        return parts[0];
     }
 }

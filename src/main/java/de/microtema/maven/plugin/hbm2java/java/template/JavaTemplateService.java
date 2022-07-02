@@ -4,6 +4,7 @@ import de.microtema.maven.plugin.hbm2java.model.ColumnDescription;
 import de.microtema.maven.plugin.hbm2java.model.ProjectData;
 import de.microtema.maven.plugin.hbm2java.model.TableDescription;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -11,33 +12,38 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JavaTemplateService {
 
-    public static boolean skipField(boolean isCommonClass, Set<String> commonFields, String name) {
-
-        if (isCommonClass) {
-            return !commonFields.contains(name);
-        } else return commonFields.contains(name);
-    }
-
     private final JavaTemplate javaTemplate;
 
     public void writeJavaTemplates(List<TableDescription> tableDescriptions, ProjectData projectData) {
 
         Set<String> commonColumns = getCommonColumns(tableDescriptions);
 
+        TableDescription baseTableDescription = null;
+
         if (!commonColumns.isEmpty()) {
 
             TableDescription tableDescription = tableDescriptions.get(0);
             List<ColumnDescription> commonsColumns = tableDescription.getColumns().stream().filter(it -> commonColumns.contains(it.getName())).collect(Collectors.toList());
 
-            tableDescription = new TableDescription();
-            tableDescription.setName("CommonEntity");
-            tableDescription.setColumns(commonsColumns);
-            javaTemplate.writeOutEntity(tableDescription, projectData);
+            baseTableDescription = new TableDescription();
+
+            baseTableDescription.setName(projectData.getDomainName() + "Entity");
+            baseTableDescription.setColumns(commonsColumns);
+            baseTableDescription.setCommonClass(true);
+            baseTableDescription.setExtendsClassName("BaseEntity<" + projectData.getDomainName() + "Key>");
+
+            javaTemplate.writeOutEntity(baseTableDescription, projectData);
         }
 
         for (TableDescription tableDescription : tableDescriptions) {
 
+            tableDescription.setName(tableDescription.getName() + "Entity");
+
             tableDescription.getColumns().removeIf(it -> commonColumns.contains(it.getName()));
+
+            if (Objects.nonNull(baseTableDescription)) {
+                tableDescription.setExtendsClassName(baseTableDescription.getName());
+            }
 
             javaTemplate.writeOutEntity(tableDescription, projectData);
         }

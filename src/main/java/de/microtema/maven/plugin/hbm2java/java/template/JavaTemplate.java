@@ -6,12 +6,16 @@ import de.microtema.maven.plugin.hbm2java.model.TableDescription;
 import de.microtema.maven.plugin.hbm2java.util.MojoUtil;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,14 +28,45 @@ public class JavaTemplate {
     @SneakyThrows
     public void writeOutEntity(TableDescription tableDescription, ProjectData projectData) {
 
-        List<ColumnDescription> listColumnDescriptions = tableDescription.getColumns();
+        String className = tableDescription.getName();
+        String tableName = tableDescription.getTableName();
+        String packageName = projectData.getPackageName();
 
-        String tableName = tableDescription.getName();
+        List<ColumnDescription> listColumnDescriptions = tableDescription.getColumns();
+        String extendsClassName = tableDescription.getExtendsClassName();
+
+        boolean isCommonClass = tableDescription.isCommonClass();
+        String tenantCode = tableDescription.getNamePrefix();
+
+        if (StringUtils.isNotEmpty(tenantCode)) {
+            packageName += "." + tenantCode.toLowerCase();
+        }
+
         String outputJavaDirectory = projectData.getOutputJavaDirectory();
 
         Map<String, String> fieldMapping = projectData.getFieldMapping();
 
         StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append("package ").append(packageName).append(";").append(MojoUtil.lineSeparator(2));
+
+        writeOutImports(tableDescription, stringBuilder, projectData.getPackageName(), projectData.getInterfaceNames());
+
+        stringBuilder.append("@Data\n");
+        if (isCommonClass) {
+            stringBuilder.append("@MappedSuperclass").append(MojoUtil.lineSeparator(1));
+        } else {
+            stringBuilder.append("@Entity").append(MojoUtil.lineSeparator(1));
+            stringBuilder.append("@TenantCode(TenantType.").append(tenantCode.toUpperCase()).append(")").append(MojoUtil.lineSeparator(1));
+            stringBuilder.append("@Table(name = \"").append(tableName).append("\")").append(MojoUtil.lineSeparator(1));
+        }
+        stringBuilder.append("@EqualsAndHashCode(callSuper = true)").append(MojoUtil.lineSeparator(1));
+
+        stringBuilder.append("public class ").append(className);
+        if (StringUtils.isNotEmpty(extendsClassName)) {
+            stringBuilder.append(" extends ").append(extendsClassName);
+        }
+        stringBuilder.append(" {").append(MojoUtil.lineSeparator(2));
 
         for (ColumnDescription columnDescription : listColumnDescriptions) {
 
@@ -47,10 +82,23 @@ public class JavaTemplate {
             stringBuilder.append("    ").append(getFieldTemplate(columnDescription, fieldMapping)).append(lineSeparator(2));
         }
 
+        stringBuilder.append("}").append(MojoUtil.lineSeparator(1));
+
+        writeOutFile(tableDescription, projectData, className, outputJavaDirectory, stringBuilder);
+    }
+
+    private void writeOutFile(TableDescription tableDescription, ProjectData projectData, String tableName, String outputJavaDirectory, StringBuilder stringBuilder) throws IOException {
+
         String packageDirectory = MojoUtil.getPackageDirectory(projectData.getPackageName());
 
-        String file = String.format("%s%s%s%s.java.template", outputJavaDirectory, File.separator, packageDirectory, tableName);
-        System.out.println("Writing Java file " + file);
+        String subFolder = StringUtils.trimToEmpty(tableDescription.getNamePrefix()).toLowerCase();
+
+        if (StringUtils.isNotEmpty(subFolder)) {
+            subFolder += File.separator;
+        }
+
+        String file = String.format("%s%s%s%s%s.java", outputJavaDirectory, File.separator, packageDirectory, subFolder, tableName);
+        System.out.println("Writing Java Entity file " + file);
 
         File outputFile = new File(file);
         FileUtils.writeStringToFile(outputFile, stringBuilder.toString(), Charset.defaultCharset());
@@ -70,10 +118,10 @@ public class JavaTemplate {
         boolean required = columnDescription.isRequired();
 
         if (required) {
-            return String.format("@Column(name = \"[%s]\")", name);
+            return String.format("@Column(name = \"[%s]\", nullable = false)", name);
         }
 
-        return String.format("@Column(name = \"[%s]\", nullable = false)", name);
+        return String.format("@Column(name = \"[%s]\")", name);
     }
 
     private static String getColumnJsonAnnotationTemplate(ColumnDescription columnDescription) {
@@ -146,5 +194,108 @@ public class JavaTemplate {
             default:
                 return null;
         }
+    }
+
+    private void writeOutImports(TableDescription tableDescription, StringBuilder stringBuilder, String packageName, List<String> interfaceNames) {
+
+        String namePrefix = tableDescription.getNamePrefix();
+        String extendsClassName = tableDescription.getExtendsClassName();
+
+        boolean containFields = !tableDescription.getColumns().isEmpty();
+
+        boolean isCommonClass = tableDescription.isCommonClass();
+
+        List<String> imports = new ArrayList<>();
+
+        if (containFields) {
+            imports.add("com.fasterxml.jackson.annotation.JsonProperty");
+        }
+
+        imports.add("lombok.Data");
+        imports.add("lombok.EqualsAndHashCode");
+
+        if (isCommonClass) {
+
+            if (StringUtils.isNotEmpty(extendsClassName)) {
+
+                String className = MojoUtil.cleanupClassName(extendsClassName);
+                interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals(className)).forEach(imports::add);
+                imports.add(null);
+            }
+
+        } else {
+
+            interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals("TenantCode")).forEach(imports::add);
+
+            String extendsClassPackageName = "";
+            if (StringUtils.isNotEmpty(namePrefix)) {
+                extendsClassPackageName = packageName;
+            }
+            if (StringUtils.isNotEmpty(extendsClassName)) {
+                extendsClassPackageName += "." + extendsClassName;
+            }
+
+            if (StringUtils.isNotEmpty(extendsClassPackageName)) {
+                imports.add(extendsClassPackageName);
+            }
+
+            interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals("TenantType")).forEach(imports::add);
+
+            imports.add(null);
+
+            imports.add("javax.persistence.Entity");
+            imports.add("javax.persistence.Table");
+        }
+
+        List<String> importPackages = getImportPackages(tableDescription.getColumns(), isCommonClass);
+
+        imports.addAll(importPackages);
+
+        for (String importName : imports) {
+
+            if (StringUtils.isEmpty(importName)) {
+                stringBuilder.append(MojoUtil.lineSeparator(1));
+            } else {
+                stringBuilder.append("import ").append(importName).append(";").append(MojoUtil.lineSeparator(1));
+            }
+        }
+
+        stringBuilder.append(MojoUtil.lineSeparator(1));
+    }
+
+    private List<String> getImportPackages(List<ColumnDescription> columns, boolean isSuperClass) {
+
+        List<String> packages = new ArrayList<>();
+
+        if (!columns.isEmpty()) {
+            packages.add("javax.persistence.Column");
+        }
+
+        boolean anyMatch = columns.stream()
+                .anyMatch(it -> StringUtils.equals(it.getJavaType(), byte[].class.getName()));
+
+        if (anyMatch) {
+            packages.add("javax.persistence.Lob");
+        }
+
+        if (isSuperClass) {
+            packages.add("javax.persistence.MappedSuperclass");
+        }
+
+        anyMatch = columns.stream()
+                .anyMatch(it -> StringUtils.equals(it.getJavaType(), BigDecimal.class.getName()));
+
+        if (anyMatch) {
+            packages.add("java.math.BigDecimal");
+        }
+
+        anyMatch = columns.stream()
+                .anyMatch(it -> StringUtils.equals(it.getJavaType(), Timestamp.class.getName()));
+
+        if (anyMatch) {
+            packages.add("java.time.LocalDateTime");
+        }
+
+        return packages;
     }
 }

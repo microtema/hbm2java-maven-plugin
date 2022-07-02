@@ -1,8 +1,8 @@
 package de.microtema.maven.plugin.hbm2java.jdbc;
 
-import de.microtema.maven.plugin.hbm2java.util.MojoUtil;
 import de.microtema.maven.plugin.hbm2java.model.ColumnDescription;
 import de.microtema.maven.plugin.hbm2java.model.DatabaseConfig;
+import de.microtema.maven.plugin.hbm2java.util.MojoUtil;
 import lombok.SneakyThrows;
 
 import java.sql.*;
@@ -63,8 +63,10 @@ public class JdbcMetadataService {
 
     private Set<String> getPrimaryKeys(String tableName, Connection connection) throws SQLException {
 
+        tableName = MojoUtil.cleanupTableName(tableName);
+
         DatabaseMetaData metaData = connection.getMetaData();
-        ResultSet primaryKeys = metaData.getPrimaryKeys(null, null, MojoUtil.cleanupTableName(tableName));
+        ResultSet primaryKeys = metaData.getPrimaryKeys(null, null, tableName);
 
         Set<String> pkColumnSet = new HashSet<>();
 

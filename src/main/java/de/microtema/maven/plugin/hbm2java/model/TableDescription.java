@@ -2,12 +2,21 @@ package de.microtema.maven.plugin.hbm2java.model;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 public class TableDescription {
 
+    private String namePrefix;
+
     private String name;
 
-    private List<ColumnDescription> columns;
+    private String tableName;
+
+    private List<ColumnDescription> columns = new ArrayList<>();
+
+    private String extendsClassName;
+
+    private boolean commonClass;
 }
