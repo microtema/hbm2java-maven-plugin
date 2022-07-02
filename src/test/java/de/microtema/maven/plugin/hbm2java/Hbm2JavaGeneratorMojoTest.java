@@ -46,6 +46,7 @@ class Hbm2JavaGeneratorMojoTest {
         sut.interfaceNames.add("de.microtema.tenant.TenantType");
         sut.interfaceNames.add("de.microtema.tenant.TenantCode");
         sut.interfaceNames.add("de.microtema.repository.BaseEntity");
+        sut.interfaceNames.add("de.microtema.repository.CompositeKey");
         sut.domainName = "customer";
         sut.tableNames = Arrays.asList("MT:[MT$Customer]", "DX:[DX$Customer]");
         sut.host = databaseConfig.getHost();
@@ -57,7 +58,7 @@ class Hbm2JavaGeneratorMojoTest {
         File[] files = outputSpecFile.listFiles();
 
         assertNotNull(files);
-        assertEquals(3, files.length);
+        assertEquals(4, files.length);
 
         File dir = new File(outputSpecFile, "mt");
         String answer = FileUtils.readFileToString(dir.listFiles()[0], "UTF-8");
@@ -105,6 +106,28 @@ class Hbm2JavaGeneratorMojoTest {
                 "@Table(name = \"[DX$Customer]\")\n" +
                 "@EqualsAndHashCode(callSuper = true)\n" +
                 "public class DXCustomerEntity extends CustomerEntity {\n" +
+                "\n" +
+                "}\n", answer);
+
+        file = files[3];
+        answer = FileUtils.readFileToString(file, "UTF-8");
+
+        assertEquals("package de.microtema.repository;\n" +
+                "\n" +
+                "import com.fasterxml.jackson.annotation.JsonProperty;\n" +
+                "import lombok.Data;\n" +
+                "import de.microtema.repository.CompositeKey;\n" +
+                "\n" +
+                "import javax.persistence.Column;\n" +
+                "import javax.persistence.Embeddable;\n" +
+                "\n" +
+                "@Data\n" +
+                "@Embeddable\n" +
+                "public class CustomerKey implements CompositeKey {\n" +
+                "\n" +
+                "    @JsonProperty(\"[No_]\")\n" +
+                "    @Column(name = \"[No_]\", nullable = false)\n" +
+                "    private String no;\n" +
                 "\n" +
                 "}\n", answer);
     }

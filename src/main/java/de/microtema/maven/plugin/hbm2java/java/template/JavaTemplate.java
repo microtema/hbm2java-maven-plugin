@@ -36,6 +36,7 @@ public class JavaTemplate {
         String extendsClassName = tableDescription.getExtendsClassName();
 
         boolean isCommonClass = tableDescription.isCommonClass();
+        boolean isEntityClassType = StringUtils.contains(className, "Entity");
         String tenantCode = tableDescription.getNamePrefix();
 
         if (StringUtils.isNotEmpty(tenantCode)) {
@@ -55,16 +56,21 @@ public class JavaTemplate {
         stringBuilder.append("@Data\n");
         if (isCommonClass) {
             stringBuilder.append("@MappedSuperclass").append(MojoUtil.lineSeparator(1));
-        } else {
+        } else if (StringUtils.isNotEmpty(tenantCode)) {
             stringBuilder.append("@Entity").append(MojoUtil.lineSeparator(1));
             stringBuilder.append("@TenantCode(TenantType.").append(tenantCode.toUpperCase()).append(")").append(MojoUtil.lineSeparator(1));
             stringBuilder.append("@Table(name = \"").append(tableName).append("\")").append(MojoUtil.lineSeparator(1));
         }
-        stringBuilder.append("@EqualsAndHashCode(callSuper = true)").append(MojoUtil.lineSeparator(1));
+
+        if (isEntityClassType) {
+            stringBuilder.append("@EqualsAndHashCode(callSuper = true)").append(MojoUtil.lineSeparator(1));
+        } else {
+            stringBuilder.append("@Embeddable").append(MojoUtil.lineSeparator(1));
+        }
 
         stringBuilder.append("public class ").append(className);
         if (StringUtils.isNotEmpty(extendsClassName)) {
-            stringBuilder.append(" extends ").append(extendsClassName);
+            stringBuilder.append(isEntityClassType ? " extends " : " implements ").append(extendsClassName);
         }
         stringBuilder.append(" {").append(MojoUtil.lineSeparator(2));
 
@@ -198,8 +204,10 @@ public class JavaTemplate {
 
     private void writeOutImports(TableDescription tableDescription, StringBuilder stringBuilder, String packageName, List<String> interfaceNames) {
 
+        String className = tableDescription.getName();
         String namePrefix = tableDescription.getNamePrefix();
         String extendsClassName = tableDescription.getExtendsClassName();
+        boolean isEntityClassType = StringUtils.contains(className, "Entity");
 
         boolean containFields = !tableDescription.getColumns().isEmpty();
 
@@ -212,42 +220,56 @@ public class JavaTemplate {
         }
 
         imports.add("lombok.Data");
-        imports.add("lombok.EqualsAndHashCode");
+
+        if (isEntityClassType) {
+            imports.add("lombok.EqualsAndHashCode");
+        }
 
         if (isCommonClass) {
 
             if (StringUtils.isNotEmpty(extendsClassName)) {
 
-                String className = MojoUtil.cleanupClassName(extendsClassName);
-                interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals(className)).forEach(imports::add);
+                String classNameCleanUp = MojoUtil.cleanupClassName(extendsClassName);
+                interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals(classNameCleanUp)).forEach(imports::add);
                 imports.add(null);
             }
 
         } else {
 
-            interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals("TenantCode")).forEach(imports::add);
+            if (isEntityClassType) {
+                interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals("TenantCode")).forEach(imports::add);
 
-            String extendsClassPackageName = "";
-            if (StringUtils.isNotEmpty(namePrefix)) {
-                extendsClassPackageName = packageName;
+                String extendsClassPackageName = "";
+                if (StringUtils.isNotEmpty(namePrefix)) {
+                    extendsClassPackageName = packageName;
+                }
+                if (StringUtils.isNotEmpty(extendsClassName)) {
+                    extendsClassPackageName += "." + extendsClassName;
+                }
+
+                if (StringUtils.isNotEmpty(extendsClassPackageName)) {
+                    imports.add(extendsClassPackageName);
+                }
+
+                interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals("TenantType")).forEach(imports::add);
+
+                imports.add(null);
+
+                imports.add("javax.persistence.Entity");
+                imports.add("javax.persistence.Table");
+            } else {
+
+                interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals("CompositeKey")).forEach(imports::add);
+
+                imports.add(null);
+
+                imports.add("javax.persistence.Column");
+                imports.add("javax.persistence.Embeddable");
             }
-            if (StringUtils.isNotEmpty(extendsClassName)) {
-                extendsClassPackageName += "." + extendsClassName;
-            }
 
-            if (StringUtils.isNotEmpty(extendsClassPackageName)) {
-                imports.add(extendsClassPackageName);
-            }
-
-            interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals("TenantType")).forEach(imports::add);
-
-            imports.add(null);
-
-            imports.add("javax.persistence.Entity");
-            imports.add("javax.persistence.Table");
         }
 
-        List<String> importPackages = getImportPackages(tableDescription.getColumns(), isCommonClass);
+        List<String> importPackages = getImportPackages(tableDescription.getColumns(), isCommonClass, isEntityClassType);
 
         imports.addAll(importPackages);
 
@@ -256,6 +278,9 @@ public class JavaTemplate {
             if (StringUtils.isEmpty(importName)) {
                 stringBuilder.append(MojoUtil.lineSeparator(1));
             } else {
+
+                importName = StringUtils.trim(importName);
+
                 stringBuilder.append("import ").append(importName).append(";").append(MojoUtil.lineSeparator(1));
             }
         }
@@ -263,11 +288,11 @@ public class JavaTemplate {
         stringBuilder.append(MojoUtil.lineSeparator(1));
     }
 
-    private List<String> getImportPackages(List<ColumnDescription> columns, boolean isSuperClass) {
+    private List<String> getImportPackages(List<ColumnDescription> columns, boolean isSuperClass, boolean isEntityType) {
 
         List<String> packages = new ArrayList<>();
 
-        if (!columns.isEmpty()) {
+        if (!columns.isEmpty() && isEntityType) {
             packages.add("javax.persistence.Column");
         }
 

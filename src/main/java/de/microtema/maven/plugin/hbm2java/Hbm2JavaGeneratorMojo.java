@@ -85,6 +85,8 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
 
         for (String tableNameWithPrefix : tableNames) {
 
+            tableNameWithPrefix = StringUtils.trim(tableNameWithPrefix);
+
             String prefix = MojoUtil.getNamePrefix(tableNameWithPrefix);
             String tableName = MojoUtil.getTableName(tableNameWithPrefix);
 

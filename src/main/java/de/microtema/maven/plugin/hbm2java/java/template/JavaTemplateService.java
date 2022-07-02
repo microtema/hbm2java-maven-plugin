@@ -20,10 +20,24 @@ public class JavaTemplateService {
 
         TableDescription baseTableDescription = null;
 
+        TableDescription firstTableDescription = tableDescriptions.get(0);
+
+        List<ColumnDescription> commonsColumns = firstTableDescription.getColumns().stream().filter(ColumnDescription::isPrimaryKey).collect(Collectors.toList());
+
+        TableDescription keyTableDescription = new TableDescription();
+
+        keyTableDescription.setName(projectData.getDomainName() + "Key");
+        keyTableDescription.setColumns(commonsColumns);
+        keyTableDescription.setExtendsClassName("CompositeKey");
+
+        javaTemplate.writeOutEntity(keyTableDescription, projectData);
+
         if (!commonColumns.isEmpty()) {
 
-            TableDescription tableDescription = tableDescriptions.get(0);
-            List<ColumnDescription> commonsColumns = tableDescription.getColumns().stream().filter(it -> commonColumns.contains(it.getName())).collect(Collectors.toList());
+            commonsColumns = firstTableDescription.getColumns().stream().filter(it -> commonColumns.contains(it.getName())).collect(Collectors.toList());
+
+            commonsColumns.removeIf(ColumnDescription::isPrimaryKey);
+            commonsColumns.removeIf(it -> StringUtils.equals(it.getSqlType(), "timestamp"));
 
             baseTableDescription = new TableDescription();
 
