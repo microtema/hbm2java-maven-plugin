@@ -45,6 +45,8 @@ public class JdbcMetadataService {
                 int isNullable = columns.isNullable(index);
                 int columnDisplaySize = columns.getColumnDisplaySize(index);
 
+                boolean identityColumn = columns.isAutoIncrement(index);
+
                 ColumnDescription columnDescription = new ColumnDescription();
 
                 columnDescription.setName(columnName);
@@ -53,6 +55,7 @@ public class JdbcMetadataService {
                 columnDescription.setRequired(isNullable == 0);
                 columnDescription.setSize(columnDisplaySize);
                 columnDescription.setPrimaryKey(primaryKeys.contains(columnName));
+                columnDescription.setIdentityColumn(identityColumn);
 
                 columnNames.add(columnDescription);
             }

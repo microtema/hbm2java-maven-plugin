@@ -33,6 +33,7 @@ public class JavaTemplate {
         String packageName = projectData.getPackageName();
 
         List<ColumnDescription> listColumnDescriptions = tableDescription.getColumns();
+        boolean isIdentityColumn = listColumnDescriptions.stream().anyMatch(ColumnDescription::isIdentityColumn);
         String extendsClassName = tableDescription.getExtendsClassName();
 
         boolean isCommonClass = tableDescription.isCommonClass();
@@ -51,7 +52,7 @@ public class JavaTemplate {
 
         stringBuilder.append("package ").append(packageName).append(";").append(MojoUtil.lineSeparator(2));
 
-        writeOutImports(tableDescription, stringBuilder, projectData.getPackageName(), projectData.getInterfaceNames());
+        writeOutImports(tableDescription, stringBuilder, projectData.getPackageName(), projectData.getInterfaceNames(), isIdentityColumn);
 
         stringBuilder.append("@Data\n");
         if (isCommonClass) {
@@ -63,14 +64,17 @@ public class JavaTemplate {
         }
 
         if (isEntityClassType) {
-            stringBuilder.append("@EqualsAndHashCode(callSuper = true)").append(MojoUtil.lineSeparator(1));
-        } else {
+
+            if (!isIdentityColumn) {
+                stringBuilder.append("@EqualsAndHashCode(callSuper = true)").append(MojoUtil.lineSeparator(1));
+            }
+        } else if (!isIdentityColumn) {
             stringBuilder.append("@Embeddable").append(MojoUtil.lineSeparator(1));
         }
 
         stringBuilder.append("public class ").append(className);
         if (StringUtils.isNotEmpty(extendsClassName)) {
-            stringBuilder.append(isEntityClassType ? " extends " : " implements ").append(extendsClassName);
+            stringBuilder.append(isEntityClassType && !isIdentityColumn ? " extends " : " implements ").append(extendsClassName);
         }
         stringBuilder.append(" {").append(MojoUtil.lineSeparator(2));
 
@@ -78,6 +82,11 @@ public class JavaTemplate {
 
             String columnType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType());
             String fieldAnnotationTemplate = getFieldAnnotation(columnType);
+
+            if (columnDescription.isIdentityColumn()) {
+                stringBuilder.append("    ").append("@Id").append(lineSeparator(1));
+                stringBuilder.append("    ").append("@GeneratedValue(strategy = GenerationType.IDENTITY)").append(lineSeparator(1));
+            }
 
             if (Objects.nonNull(fieldAnnotationTemplate)) {
                 stringBuilder.append("    ").append(fieldAnnotationTemplate).append(lineSeparator(1));
@@ -110,7 +119,7 @@ public class JavaTemplate {
         FileUtils.writeStringToFile(outputFile, stringBuilder.toString(), Charset.defaultCharset());
     }
 
-    private static String getFieldTemplate(ColumnDescription columnDescription, Map<String, String> fieldMapping) {
+    private String getFieldTemplate(ColumnDescription columnDescription, Map<String, String> fieldMapping) {
 
         String name = resolveFiledName(columnDescription.getName(), fieldMapping);
         String fieldType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType());
@@ -118,26 +127,51 @@ public class JavaTemplate {
         return String.format("private %s %s;", fieldType, name);
     }
 
-    private static String getColumnAnnotationTemplate(ColumnDescription columnDescription) {
+    private String getColumnAnnotationTemplate(ColumnDescription columnDescription) {
 
         String name = columnDescription.getName();
         boolean required = columnDescription.isRequired();
+        int size = getSize(columnDescription);
 
         if (required) {
+
+            if (size > -1) {
+                return String.format("@Column(name = \"[%s]\", nullable = false, length = " + size + ")", name);
+            }
+
             return String.format("@Column(name = \"[%s]\", nullable = false)", name);
+        }
+
+        if (size > -1) {
+            return String.format("@Column(name = \"[%s]\", length = " + size + ")", name);
         }
 
         return String.format("@Column(name = \"[%s]\")", name);
     }
 
-    private static String getColumnJsonAnnotationTemplate(ColumnDescription columnDescription) {
+    private int getSize(ColumnDescription columnDescription) {
+
+        String columnType = columnDescription.getJavaType();
+
+        switch (columnType) {
+            case "java.lang.String":
+            case "java.lang.Integer":
+            case "java.lang.Long":
+            case "java.math.BigDecimal":
+                return columnDescription.getSize();
+            default:
+                return -1;
+        }
+    }
+
+    private String getColumnJsonAnnotationTemplate(ColumnDescription columnDescription) {
 
         String name = columnDescription.getName();
 
         return String.format("@JsonProperty(\"[%s]\")", name);
     }
 
-    public static String resolveFiledName(String snakeWord, Map<String, String> fieldMapping) {
+    public String resolveFiledName(String snakeWord, Map<String, String> fieldMapping) {
 
         snakeWord = fieldMapping.getOrDefault(snakeWord, snakeWord);
 
@@ -161,13 +195,15 @@ public class JavaTemplate {
         return WordUtils.uncapitalize(snakeWord);
     }
 
-    private static String resolveFiledType(String javaType, String sqlType) {
+    private String resolveFiledType(String javaType, String sqlType) {
 
         switch (javaType) {
             case "java.sql.Timestamp":
                 return LocalDateTime.class.getSimpleName();
             case "java.math.BigDecimal":
                 return BigDecimal.class.getSimpleName();
+            case "java.lang.Long":
+                return Long.class.getSimpleName();
             case "java.lang.Integer":
                 return int.class.getSimpleName();
             case "java.lang.String":
@@ -180,19 +216,21 @@ public class JavaTemplate {
         }
     }
 
-    private static String resolveFiledTypeFromSQlType(String sqlType) {
+    private String resolveFiledTypeFromSQlType(String sqlType) {
 
         switch (sqlType) {
             case "timestamp":
                 return LocalDateTime.class.getSimpleName();
             case "image":
                 return byte[].class.getSimpleName();
+            case "bigint":
+                return Long.class.getSimpleName();
             default:
                 return sqlType;
         }
     }
 
-    private static String getFieldAnnotation(String sqlType) {
+    private String getFieldAnnotation(String sqlType) {
 
         switch (sqlType) {
             case "byte[]":
@@ -202,7 +240,7 @@ public class JavaTemplate {
         }
     }
 
-    private void writeOutImports(TableDescription tableDescription, StringBuilder stringBuilder, String packageName, List<String> interfaceNames) {
+    private void writeOutImports(TableDescription tableDescription, StringBuilder stringBuilder, String packageName, List<String> interfaceNames, boolean isIdentityColumn) {
 
         String className = tableDescription.getName();
         String namePrefix = tableDescription.getNamePrefix();
@@ -221,7 +259,7 @@ public class JavaTemplate {
 
         imports.add("lombok.Data");
 
-        if (isEntityClassType) {
+        if (isEntityClassType && !isIdentityColumn) {
             imports.add("lombok.EqualsAndHashCode");
         }
 
@@ -255,21 +293,33 @@ public class JavaTemplate {
 
                 imports.add(null);
 
+                if (containFields) {
+                    imports.add("javax.persistence.Column");
+                }
+
                 imports.add("javax.persistence.Entity");
                 imports.add("javax.persistence.Table");
+
             } else {
 
                 interfaceNames.stream().filter(it -> MojoUtil.getClassName(it).equals("CompositeKey")).forEach(imports::add);
 
                 imports.add(null);
 
-                imports.add("javax.persistence.Column");
-                imports.add("javax.persistence.Embeddable");
+                if (isIdentityColumn) {
+                    imports.add("javax.persistence.GeneratedValue");
+                    imports.add("javax.persistence.GenerationType");
+                    imports.add("javax.persistence.Id");
+                    imports.add("javax.persistence.MappedSuperclass");
+                } else {
+                    imports.add("javax.persistence.Column");
+                    imports.add("javax.persistence.Embeddable");
+                }
             }
 
         }
 
-        List<String> importPackages = getImportPackages(tableDescription.getColumns(), isCommonClass, isEntityClassType);
+        List<String> importPackages = getImportPackages(tableDescription.getColumns(), isCommonClass, isEntityClassType, isIdentityColumn);
 
         imports.addAll(importPackages);
 
@@ -288,12 +338,20 @@ public class JavaTemplate {
         stringBuilder.append(MojoUtil.lineSeparator(1));
     }
 
-    private List<String> getImportPackages(List<ColumnDescription> columns, boolean isSuperClass, boolean isEntityType) {
+    private List<String> getImportPackages(List<ColumnDescription> columns, boolean isSuperClass, boolean isEntityType, boolean isIdentityColumn) {
 
         List<String> packages = new ArrayList<>();
 
         if (!columns.isEmpty() && isEntityType) {
+
             packages.add("javax.persistence.Column");
+
+            if (isIdentityColumn) {
+
+                packages.add("javax.persistence.GeneratedValue");
+                packages.add("javax.persistence.GenerationType");
+                packages.add("javax.persistence.Id");
+            }
         }
 
         boolean anyMatch = columns.stream()
@@ -304,6 +362,8 @@ public class JavaTemplate {
         }
 
         if (isSuperClass) {
+
+
             packages.add("javax.persistence.MappedSuperclass");
         }
 

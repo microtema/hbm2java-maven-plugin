@@ -45,10 +45,11 @@ class Hbm2JavaGeneratorMojoTest {
 
         sut.interfaceNames.add("de.microtema.tenant.TenantType");
         sut.interfaceNames.add("de.microtema.tenant.TenantCode");
+        sut.interfaceNames.add("de.microtema.repository.Entity");
         sut.interfaceNames.add("de.microtema.repository.BaseEntity");
         sut.interfaceNames.add("de.microtema.repository.CompositeKey");
         sut.domainName = "customer";
-        sut.tableNames = Arrays.asList("MT:[MT$Customer]", "DX:[DX$Customer]");
+        sut.tableNames = Arrays.asList("TRP:[TRP_EC$Internet Buffer Table EDR]", "VTB:[VTB_EC$Internet Buffer Table EDR]");
         sut.host = databaseConfig.getHost();
         sut.userName = databaseConfig.getUserName();
         sut.password = databaseConfig.getPassword();
@@ -126,7 +127,7 @@ class Hbm2JavaGeneratorMojoTest {
                 "public class CustomerKey implements CompositeKey {\n" +
                 "\n" +
                 "    @JsonProperty(\"[No_]\")\n" +
-                "    @Column(name = \"[No_]\", nullable = false)\n" +
+                "    @Column(name = \"[No_]\", nullable = false, length = 20)\n" +
                 "    private String no;\n" +
                 "\n" +
                 "}\n", answer);

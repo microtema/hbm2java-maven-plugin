@@ -22,29 +22,41 @@ public class JavaTemplateService {
 
         TableDescription firstTableDescription = tableDescriptions.get(0);
 
-        List<ColumnDescription> commonsColumns = firstTableDescription.getColumns().stream().filter(ColumnDescription::isPrimaryKey).collect(Collectors.toList());
+        List<ColumnDescription> commonsColumns = new ArrayList<>(firstTableDescription.getColumns());
 
-        TableDescription keyTableDescription = new TableDescription();
+        boolean isIdentityColumn = commonsColumns.stream().anyMatch(ColumnDescription::isIdentityColumn);
 
-        keyTableDescription.setName(projectData.getDomainName() + "Key");
-        keyTableDescription.setColumns(commonsColumns);
-        keyTableDescription.setExtendsClassName("CompositeKey");
+        if (!isIdentityColumn) {
 
-        javaTemplate.writeOutEntity(keyTableDescription, projectData);
+            commonsColumns = commonsColumns.stream().filter(ColumnDescription::isPrimaryKey).collect(Collectors.toList());
+
+            TableDescription keyTableDescription = new TableDescription();
+
+            keyTableDescription.setName(projectData.getDomainName() + "Key");
+            keyTableDescription.setColumns(commonsColumns);
+            keyTableDescription.setExtendsClassName("CompositeKey");
+
+            javaTemplate.writeOutEntity(keyTableDescription, projectData);
+        }
 
         if (!commonColumns.isEmpty()) {
 
             commonsColumns = firstTableDescription.getColumns().stream().filter(it -> commonColumns.contains(it.getName())).collect(Collectors.toList());
 
-            commonsColumns.removeIf(ColumnDescription::isPrimaryKey);
             commonsColumns.removeIf(it -> StringUtils.equals(it.getSqlType(), "timestamp"));
 
             baseTableDescription = new TableDescription();
 
+            if (isIdentityColumn) {
+                baseTableDescription.setExtendsClassName("Entity");
+            } else {
+                commonsColumns.removeIf(ColumnDescription::isPrimaryKey);
+                baseTableDescription.setExtendsClassName("BaseEntity<" + projectData.getDomainName() + "Key>");
+            }
+
             baseTableDescription.setName(projectData.getDomainName() + "Entity");
             baseTableDescription.setColumns(commonsColumns);
             baseTableDescription.setCommonClass(true);
-            baseTableDescription.setExtendsClassName("BaseEntity<" + projectData.getDomainName() + "Key>");
 
             javaTemplate.writeOutEntity(baseTableDescription, projectData);
         }

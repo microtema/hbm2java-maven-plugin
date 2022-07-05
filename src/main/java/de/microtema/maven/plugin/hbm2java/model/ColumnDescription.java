@@ -22,4 +22,6 @@ public class ColumnDescription {
     private boolean required;
 
     private boolean primaryKey;
+
+    private boolean identityColumn;
 }
