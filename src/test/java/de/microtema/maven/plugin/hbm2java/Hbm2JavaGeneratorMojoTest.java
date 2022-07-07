@@ -49,7 +49,7 @@ class Hbm2JavaGeneratorMojoTest {
         sut.interfaceNames.add("de.microtema.repository.BaseEntity");
         sut.interfaceNames.add("de.microtema.repository.CompositeKey");
         sut.domainName = "customer";
-        sut.tableNames = Arrays.asList("TRP:[TRP_EC$Internet Buffer Table EDR]", "VTB:[VTB_EC$Internet Buffer Table EDR]");
+        sut.tableNames = Arrays.asList("MT:[MT$Customer]", "DX:[DX$Customer]");
         sut.host = databaseConfig.getHost();
         sut.userName = databaseConfig.getUserName();
         sut.password = databaseConfig.getPassword();

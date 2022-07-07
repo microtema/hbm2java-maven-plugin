@@ -181,11 +181,12 @@ public class JavaTemplate {
         snakeWord = snakeWord.replaceAll("Ü", "Ue");
         snakeWord = snakeWord.replaceAll("ö", "oe");
 
-        if (snakeWord.contains("_") || snakeWord.contains("-") || snakeWord.contains(" ")) {
+        if (snakeWord.contains("_") || snakeWord.contains("-") || snakeWord.contains(" ") || snakeWord.contains("+")) {
 
 
             snakeWord = snakeWord.replaceAll("_", " ");
             snakeWord = snakeWord.replaceAll("-", " ");
+            snakeWord = snakeWord.replaceAll("\\+", " ");
 
             snakeWord = WordUtils.capitalizeFully(snakeWord);
 
