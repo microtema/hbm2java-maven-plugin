@@ -14,6 +14,8 @@ public class TableDescription {
 
     private String tableName;
 
+    private String schemaName;
+
     private List<ColumnDescription> columns = new ArrayList<>();
 
     private String extendsClassName;

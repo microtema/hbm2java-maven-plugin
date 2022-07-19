@@ -35,7 +35,7 @@ public class MojoUtil {
 
         String[] parts = tableName.split("\\:");
 
-        if (parts.length == 2) {
+        if (parts.length > 1) {
             return parts[0];
         }
 
@@ -46,11 +46,28 @@ public class MojoUtil {
 
         String[] parts = tableName.split("\\:");
 
+        if (parts.length == 1) {
+            return parts[0];
+        }
         if (parts.length == 2) {
-            tableName = parts[1];
+            return parts[1];
+        }
+        if (parts.length == 3) {
+            return parts[2];
         }
 
-        return tableName;
+        return null;
+    }
+
+    public static String getSchemaName(String tableName) {
+
+        String[] parts = tableName.split("\\:");
+
+        if (parts.length == 3) {
+            return parts[1];
+        }
+
+        return null;
     }
 
     public static String cleanupTableName(String tableName) {

@@ -92,12 +92,14 @@ class Hbm2JavaGeneratorMojoTest {
 
         assertEquals("package de.microtema.repository.dx;\n" +
                 "\n" +
+                "import com.fasterxml.jackson.annotation.JsonProperty;\n" +
                 "import lombok.Data;\n" +
                 "import lombok.EqualsAndHashCode;\n" +
                 "import de.microtema.tenant.TenantCode;\n" +
                 "import de.microtema.repository.CustomerEntity;\n" +
                 "import de.microtema.tenant.TenantType;\n" +
                 "\n" +
+                "import javax.persistence.Column;\n" +
                 "import javax.persistence.Entity;\n" +
                 "import javax.persistence.Table;\n" +
                 "\n" +
@@ -107,6 +109,10 @@ class Hbm2JavaGeneratorMojoTest {
                 "@Table(name = \"[DX$Customer]\")\n" +
                 "@EqualsAndHashCode(callSuper = true)\n" +
                 "public class DXCustomerEntity extends CustomerEntity {\n" +
+                "\n" +
+                "    @JsonProperty(\"[Last Name]\")\n" +
+                "    @Column(name = \"[Last Name]\", length = 250)\n" +
+                "    private String lastName;\n" +
                 "\n" +
                 "}\n", answer);
 

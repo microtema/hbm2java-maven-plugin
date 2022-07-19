@@ -30,6 +30,9 @@ public class JavaTemplate {
 
         String className = tableDescription.getName();
         String tableName = tableDescription.getTableName();
+        String schemaName = tableDescription.getSchemaName();
+
+        String tenantCode = tableDescription.getNamePrefix();
         String packageName = projectData.getPackageName();
 
         List<ColumnDescription> listColumnDescriptions = tableDescription.getColumns();
@@ -38,7 +41,6 @@ public class JavaTemplate {
 
         boolean isCommonClass = tableDescription.isCommonClass();
         boolean isEntityClassType = StringUtils.contains(className, "Entity");
-        String tenantCode = tableDescription.getNamePrefix();
 
         if (StringUtils.isNotEmpty(tenantCode)) {
             packageName += "." + tenantCode.toLowerCase();
@@ -60,7 +62,11 @@ public class JavaTemplate {
         } else if (StringUtils.isNotEmpty(tenantCode)) {
             stringBuilder.append("@Entity").append(MojoUtil.lineSeparator(1));
             stringBuilder.append("@TenantCode(TenantType.").append(tenantCode.toUpperCase()).append(")").append(MojoUtil.lineSeparator(1));
-            stringBuilder.append("@Table(name = \"").append(tableName).append("\")").append(MojoUtil.lineSeparator(1));
+            stringBuilder.append("@Table(name = \"").append(tableName).append("\"");
+            if (StringUtils.isNotEmpty(schemaName)) {
+                stringBuilder.append(", ").append("schema = \"").append(schemaName).append("\"");
+            }
+            stringBuilder.append(")").append(MojoUtil.lineSeparator(1));
         }
 
         if (isEntityClassType) {
@@ -206,7 +212,7 @@ public class JavaTemplate {
             case "java.lang.Long":
                 return Long.class.getSimpleName();
             case "java.lang.Integer":
-                return int.class.getSimpleName();
+                return Integer.class.getSimpleName();
             case "java.lang.String":
                 return String.class.getSimpleName();
             case "java.lang.Boolean":
@@ -321,6 +327,8 @@ public class JavaTemplate {
         }
 
         List<String> importPackages = getImportPackages(tableDescription.getColumns(), isCommonClass, isEntityClassType, isIdentityColumn);
+
+        importPackages.removeIf(imports::contains);
 
         imports.addAll(importPackages);
 
