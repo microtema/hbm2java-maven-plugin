@@ -14,10 +14,10 @@ import java.util.Set;
 public class JdbcMetadataService {
 
     @SneakyThrows
-    public List<ColumnDescription> getListColumnDescriptions(DatabaseConfig databaseConfig, String tableName) {
+    public List<ColumnDescription> getListColumnDescriptions(DatabaseConfig databaseConfig, String tableNameRaw) {
 
         String jdbcDriver = databaseConfig.getJdbcDriver();
-        String host = databaseConfig.getHost();
+        String host = MojoUtil.getHostName(databaseConfig.getHost(), tableNameRaw);
 
         // Register JDBC driver
         Class.forName(jdbcDriver);
@@ -28,6 +28,8 @@ public class JdbcMetadataService {
         List<ColumnDescription> columnNames = new ArrayList<>();
 
         try (Connection conn = DriverManager.getConnection(host, userName, password)) {
+
+            String tableName = MojoUtil.getTableName(tableNameRaw);
 
             Set<String> primaryKeys = getPrimaryKeys(tableName, conn);
 

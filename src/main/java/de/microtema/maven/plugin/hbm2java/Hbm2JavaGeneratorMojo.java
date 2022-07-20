@@ -83,21 +83,21 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
 
         List<TableDescription> tableDescriptions = new ArrayList<>();
 
-        for (String tableNameWithPrefix : tableNames) {
+        for (String tableNameRaw : tableNames) {
 
-            tableNameWithPrefix = StringUtils.trim(tableNameWithPrefix);
+            tableNameRaw = StringUtils.trim(tableNameRaw);
 
-            String prefix = MojoUtil.getNamePrefix(tableNameWithPrefix);
-            String tableName = MojoUtil.getTableName(tableNameWithPrefix);
-            String schemaName = MojoUtil.getSchemaName(tableNameWithPrefix);
+            String prefix = MojoUtil.getNamePrefix(tableNameRaw);
+            String tableName = MojoUtil.getTableName(tableNameRaw);
+            String databaseName = MojoUtil.getDatabaseName(tableNameRaw);
 
-            List<ColumnDescription> columnDescriptions = jdbcMetadataService.getListColumnDescriptions(databaseConfig, tableName);
+            List<ColumnDescription> columnDescriptions = jdbcMetadataService.getListColumnDescriptions(databaseConfig, tableNameRaw);
 
             TableDescription tableDescription = new TableDescription();
             tableDescription.setNamePrefix(prefix);
             tableDescription.setName(StringUtils.trimToEmpty(prefix).toUpperCase() + domainName);
             tableDescription.setTableName(tableName);
-            tableDescription.setSchemaName(schemaName);
+            tableDescription.setDatabaseName(databaseName);
             tableDescription.setColumns(columnDescriptions);
 
             tableDescriptions.add(tableDescription);

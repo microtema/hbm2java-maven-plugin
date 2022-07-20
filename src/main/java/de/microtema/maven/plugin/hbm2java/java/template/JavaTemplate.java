@@ -30,7 +30,6 @@ public class JavaTemplate {
 
         String className = tableDescription.getName();
         String tableName = tableDescription.getTableName();
-        String schemaName = tableDescription.getSchemaName();
 
         String tenantCode = tableDescription.getNamePrefix();
         String packageName = projectData.getPackageName();
@@ -62,11 +61,7 @@ public class JavaTemplate {
         } else if (StringUtils.isNotEmpty(tenantCode)) {
             stringBuilder.append("@Entity").append(MojoUtil.lineSeparator(1));
             stringBuilder.append("@TenantCode(TenantType.").append(tenantCode.toUpperCase()).append(")").append(MojoUtil.lineSeparator(1));
-            stringBuilder.append("@Table(name = \"").append(tableName).append("\"");
-            if (StringUtils.isNotEmpty(schemaName)) {
-                stringBuilder.append(", ").append("schema = \"").append(schemaName).append("\"");
-            }
-            stringBuilder.append(")").append(MojoUtil.lineSeparator(1));
+            stringBuilder.append("@Table(name = \"").append(tableName).append("\"").append(")").append(MojoUtil.lineSeparator(1));
         }
 
         if (isEntityClassType) {

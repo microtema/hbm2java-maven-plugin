@@ -66,6 +66,7 @@ public class JavaTemplateService {
             tableDescription.setName(tableDescription.getName() + "Entity");
 
             tableDescription.getColumns().removeIf(it -> commonColumns.contains(it.getName()));
+            tableDescription.getColumns().removeIf(it -> StringUtils.equals(it.getSqlType(), "timestamp"));
 
             if (Objects.nonNull(baseTableDescription)) {
                 tableDescription.setExtendsClassName(baseTableDescription.getName());

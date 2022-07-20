@@ -1,6 +1,7 @@
 package de.microtema.maven.plugin.hbm2java.util;
 
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 
@@ -59,7 +60,7 @@ public class MojoUtil {
         return null;
     }
 
-    public static String getSchemaName(String tableName) {
+    public static String getDatabaseName(String tableName) {
 
         String[] parts = tableName.split("\\:");
 
@@ -87,5 +88,16 @@ public class MojoUtil {
         String[] parts = className.split("<");
 
         return parts[0];
+    }
+
+    public static String getHostName(String host, String tableNameRaw) {
+
+        String databaseName = getDatabaseName(tableNameRaw);
+
+        if (StringUtils.isEmpty(databaseName)) {
+            return host;
+        }
+
+        return host + ";databaseName=" + databaseName;
     }
 }
