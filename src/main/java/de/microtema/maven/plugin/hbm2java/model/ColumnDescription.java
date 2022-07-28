@@ -2,6 +2,8 @@ package de.microtema.maven.plugin.hbm2java.model;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class ColumnDescription {
 
@@ -20,6 +22,8 @@ public class ColumnDescription {
     private int size;
 
     private boolean required;
+
+    private List<Boolean> requiredList;
 
     private boolean primaryKey;
 

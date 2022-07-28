@@ -95,14 +95,57 @@ public class JavaTemplate {
                 stringBuilder.append("    ").append(fieldAnnotationTemplate).append(lineSeparator(1));
             }
 
+            applyValidationAnnotation(columnDescription, isCommonClass, stringBuilder);
             stringBuilder.append("    ").append(getColumnJsonAnnotationTemplate(columnDescription)).append(lineSeparator(1));
-            stringBuilder.append("    ").append(getColumnAnnotationTemplate(columnDescription)).append(lineSeparator(1));
+            stringBuilder.append("    ").append(getColumnAnnotationTemplate(columnDescription, isCommonClass)).append(lineSeparator(1));
             stringBuilder.append("    ").append(getFieldTemplate(columnDescription, fieldMapping)).append(lineSeparator(2));
         }
 
         stringBuilder.append("}").append(MojoUtil.lineSeparator(1));
 
         writeOutFile(tableDescription, projectData, className, outputJavaDirectory, stringBuilder);
+    }
+
+    private void applyValidationAnnotation(ColumnDescription columnDescription, boolean isCommonClass, StringBuilder stringBuilder) {
+
+        String name = columnDescription.getName();
+        String javaType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType());
+
+        boolean required = columnDescription.isRequired();
+
+        if (isCommonClass) {
+            required = columnDescription.getRequiredList().stream().anyMatch(it -> it);
+        }
+
+        if (required) {
+
+            stringBuilder.append("    ").append("@NotNull(message = \"[").append(name).append("] must not be null\")").append(lineSeparator(1));
+        }
+
+        int size = getSize(columnDescription);
+
+        if (size > 0) {
+
+            switch (javaType) {
+                case "String":
+                case "CharSequence":
+                    stringBuilder.append("    ").append("@Size(max = ").append(size).append(", message = \"[").append(name).append("] must be between 0 and ").append(size).append(" characters long\")").append(lineSeparator(1));
+                    break;
+            }
+        }
+    }
+
+    private boolean hasValidationAnnotation(ColumnDescription columnDescription, boolean isCommonClass) {
+
+        boolean required = columnDescription.isRequired();
+
+        if (isCommonClass) {
+            required = columnDescription.getRequiredList().stream().anyMatch(it -> it);
+        }
+
+        int size = getSize(columnDescription);
+
+        return required || size > 0;
     }
 
     private void writeOutFile(TableDescription tableDescription, ProjectData projectData, String tableName, String outputJavaDirectory, StringBuilder stringBuilder) throws IOException {
@@ -130,10 +173,16 @@ public class JavaTemplate {
         return String.format("private %s %s;", fieldType, name);
     }
 
-    private String getColumnAnnotationTemplate(ColumnDescription columnDescription) {
+    private String getColumnAnnotationTemplate(ColumnDescription columnDescription, boolean isCommonClass) {
 
         String name = columnDescription.getName();
+
         boolean required = columnDescription.isRequired();
+
+        if (isCommonClass) {
+            required = columnDescription.getRequiredList().stream().anyMatch(it -> it);
+        }
+
         int size = getSize(columnDescription);
 
         if (required) {
@@ -252,7 +301,6 @@ public class JavaTemplate {
         boolean isEntityClassType = StringUtils.contains(className, "Entity");
 
         boolean containFields = !tableDescription.getColumns().isEmpty();
-
         boolean isCommonClass = tableDescription.isCommonClass();
 
         List<String> imports = new ArrayList<>();
@@ -369,8 +417,13 @@ public class JavaTemplate {
 
         if (isSuperClass) {
 
-
             packages.add("javax.persistence.MappedSuperclass");
+        }
+
+        anyMatch = columns.stream().anyMatch(it -> hasValidationAnnotation(it, isSuperClass));
+
+        if (anyMatch) {
+            packages.add("javax.validation.constraints.*");
         }
 
         anyMatch = columns.stream()

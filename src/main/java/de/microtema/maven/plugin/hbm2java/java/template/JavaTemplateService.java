@@ -100,6 +100,9 @@ public class JavaTemplateService {
                     column2Table.put(columnName, tables);
                 }
 
+                List<Boolean> requiredList = getAllRequired(columnName, tableDescriptions);
+                columnDescription.setRequiredList(requiredList);
+
                 tables.add(tableName);
             }
         }
@@ -107,5 +110,18 @@ public class JavaTemplateService {
         column2Table.entrySet().removeIf(it -> it.getValue().size() != tableDescriptions.size());
 
         return column2Table.keySet();
+    }
+
+    private List<Boolean> getAllRequired(String columnName, List<TableDescription> tableDescriptions) {
+
+        List<Boolean> requiredList = new ArrayList<>();
+
+        for (TableDescription tableDescription : tableDescriptions) {
+            tableDescription.getColumns().stream()
+                    .filter(it -> StringUtils.equalsIgnoreCase(it.getName(), columnName))
+                    .forEach(it -> requiredList.add(it.isRequired()));
+        }
+
+        return requiredList;
     }
 }

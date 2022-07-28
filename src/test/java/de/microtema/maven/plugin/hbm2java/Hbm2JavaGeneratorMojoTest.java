@@ -108,6 +108,7 @@ class Hbm2JavaGeneratorMojoTest {
                 "import javax.persistence.Column;\n" +
                 "import javax.persistence.Entity;\n" +
                 "import javax.persistence.Table;\n" +
+                "import javax.validation.constraints.*;\n" +
                 "\n" +
                 "@Data\n" +
                 "@Entity\n" +
@@ -116,6 +117,7 @@ class Hbm2JavaGeneratorMojoTest {
                 "@EqualsAndHashCode(callSuper = true)\n" +
                 "public class DXCustomerEntity extends CustomerEntity {\n" +
                 "\n" +
+                "    @Size(max = 250, message = \"[Last Name] must be between 0 and 250 characters long\")\n" +
                 "    @JsonProperty(\"[Last Name]\")\n" +
                 "    @Column(name = \"[Last Name]\", length = 250)\n" +
                 "    private String lastName;\n" +
@@ -136,11 +138,14 @@ class Hbm2JavaGeneratorMojoTest {
                 "\n" +
                 "import javax.persistence.Column;\n" +
                 "import javax.persistence.Embeddable;\n" +
+                "import javax.validation.constraints.*;\n" +
                 "\n" +
                 "@Data\n" +
                 "@Embeddable\n" +
                 "public class CustomerKey implements CompositeKey {\n" +
                 "\n" +
+                "    @NotNull(message = \"[No_] must not be null\")\n" +
+                "    @Size(max = 20, message = \"[No_] must be between 0 and 20 characters long\")\n" +
                 "    @JsonProperty(\"[No_]\")\n" +
                 "    @Column(name = \"[No_]\", nullable = false, length = 20)\n" +
                 "    private String no;\n" +
