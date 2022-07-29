@@ -41,6 +41,8 @@ public class JavaTemplate {
         boolean isCommonClass = tableDescription.isCommonClass();
         boolean isEntityClassType = StringUtils.contains(className, "Entity");
 
+        List<String> excludes = projectData.getExcludes();
+
         if (StringUtils.isNotEmpty(tenantCode)) {
             packageName += "." + tenantCode.toLowerCase();
         }
@@ -82,6 +84,12 @@ public class JavaTemplate {
         stringBuilder.append(" {").append(MojoUtil.lineSeparator(2));
 
         for (ColumnDescription columnDescription : listColumnDescriptions) {
+
+            String name = columnDescription.getName();
+
+            if (excludes.contains(name)) {
+                continue;
+            }
 
             String columnType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType());
             String fieldAnnotationTemplate = getFieldAnnotation(columnType);
@@ -256,14 +264,13 @@ public class JavaTemplate {
             case "java.math.BigDecimal":
                 return BigDecimal.class.getSimpleName();
             case "java.lang.Long":
-                return Long.class.getSimpleName();
             case "java.lang.Integer":
-                return Integer.class.getSimpleName();
+                return Long.class.getSimpleName();
             case "java.lang.String":
                 return String.class.getSimpleName();
             case "java.lang.Boolean":
             case "java.lang.Short":
-                return boolean.class.getSimpleName();
+                return Boolean.class.getSimpleName();
             default:
                 return resolveFiledTypeFromSQlType(sqlType);
         }

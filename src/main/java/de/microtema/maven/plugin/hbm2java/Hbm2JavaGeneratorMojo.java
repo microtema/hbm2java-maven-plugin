@@ -48,6 +48,9 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
     @Parameter(property = "package-name")
     List<String> interfaceNames = new ArrayList<>();
 
+    @Parameter(property = "excludes")
+    List<String> excludes = new ArrayList<>();
+
     @Parameter(property = "field-mapping")
     Properties fieldMapping = new Properties();
 
@@ -109,7 +112,8 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
         projectData.setPackageName(packageName);
         projectData.setFieldMapping(streamConvert(fieldMapping));
         projectData.setOutputJavaDirectory(outputDir);
-        projectData.setInterfaceNames(interfaceNames);
+        projectData.setInterfaceNames(interfaceNames.stream().map(String::trim).collect(Collectors.toList()));
+        projectData.setExcludes(excludes.stream().map(String::trim).collect(Collectors.toList()));
 
         javaTemplateService.writeJavaTemplates(tableDescriptions, projectData);
     }

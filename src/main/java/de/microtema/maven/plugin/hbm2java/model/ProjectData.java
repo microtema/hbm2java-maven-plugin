@@ -19,4 +19,6 @@ public class ProjectData {
     private Map<String, String> fieldMapping;
 
     private List<String> interfaceNames = new ArrayList<>();
+
+    private List<String> excludes = new ArrayList<>();
 }
