@@ -98,6 +98,36 @@ public class MojoUtil {
             return host;
         }
 
-        return host + ";databaseName=" + databaseName;
+        if (StringUtils.contains(host, "sqlserver")) {
+            return host + ";databaseName=" + databaseName;
+        }
+
+        return host;
+    }
+
+    public static String getUserName(String host, String tableNameRaw, String userName) {
+
+        String databaseName = getDatabaseName(tableNameRaw);
+
+        if (StringUtils.isEmpty(databaseName)) {
+            return userName;
+        }
+
+        if (StringUtils.contains(host, "oracle")) {
+            return databaseName;
+        }
+
+        return userName;
+    }
+
+    public static String getJdbcDriver(String host) {
+
+        if (StringUtils.contains(host, "sqlserver")) {
+            return "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+        } else if (StringUtils.contains(host, "oracle")) {
+            return "oracle.jdbc.OracleDriver";
+        }
+
+        throw new IllegalStateException("Unable to identify the JdbcDriver for host: " + host);
     }
 }

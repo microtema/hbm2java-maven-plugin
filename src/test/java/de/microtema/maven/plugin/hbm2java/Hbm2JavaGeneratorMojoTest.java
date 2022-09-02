@@ -49,10 +49,11 @@ class Hbm2JavaGeneratorMojoTest {
         sut.interfaceNames.add("de.microtema.repository.BaseEntity");
         sut.interfaceNames.add("de.microtema.repository.CompositeKey");
         sut.domainName = "customer";
-        sut.tableNames = Arrays.asList("MT:[MT$Customer]", "DX:[DX$Customer]");
-        sut.host = databaseConfig.getHost();
-        sut.userName = databaseConfig.getUserName();
-        sut.password = databaseConfig.getPassword();
+       // sut.tableNames = Arrays.asList("MT:[MT$Customer]", "DX:[DX$Customer]");
+        sut.tableNames = Arrays.asList("ZPDB:REF_RABATTE");
+        sut.host = "jdbc:oracle:thin:@tcp://localhost:1522/xe"; // databaseConfig.getHost();
+        sut.userName = "ZPDB"; //  databaseConfig.getUserName();
+        sut.password = "oracle"; // databaseConfig.getPassword();
 
         sut.execute();
 

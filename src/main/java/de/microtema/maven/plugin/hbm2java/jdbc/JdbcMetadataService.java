@@ -18,12 +18,11 @@ public class JdbcMetadataService {
 
         String jdbcDriver = databaseConfig.getJdbcDriver();
         String host = MojoUtil.getHostName(databaseConfig.getHost(), tableNameRaw);
+        String userName = MojoUtil.getUserName(databaseConfig.getHost(), tableNameRaw, databaseConfig.getUserName());
+        String password = databaseConfig.getPassword();
 
         // Register JDBC driver
         Class.forName(jdbcDriver);
-
-        String userName = databaseConfig.getUserName();
-        String password = databaseConfig.getPassword();
 
         List<ColumnDescription> columnNames = new ArrayList<>();
 
