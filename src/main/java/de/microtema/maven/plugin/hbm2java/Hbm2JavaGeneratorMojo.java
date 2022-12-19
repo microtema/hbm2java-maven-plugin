@@ -94,6 +94,7 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
             String prefix = MojoUtil.getNamePrefix(tableNameRaw);
             String tableName = MojoUtil.getTableName(tableNameRaw);
             String databaseName = MojoUtil.getDatabaseName(tableNameRaw);
+            String tableSchema = MojoUtil.getTableSchema(tableNameRaw);
 
             List<ColumnDescription> columnDescriptions = jdbcMetadataService.getListColumnDescriptions(databaseConfig, tableNameRaw);
 
@@ -102,6 +103,7 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
             tableDescription.setName(StringUtils.trimToEmpty(prefix).toUpperCase() + domainName);
             tableDescription.setTableName(tableName);
             tableDescription.setDatabaseName(databaseName);
+            tableDescription.setTableSchema(tableSchema);
             tableDescription.setColumns(columnDescriptions);
 
             tableDescriptions.add(tableDescription);
@@ -109,6 +111,7 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
 
         ProjectData projectData = new ProjectData();
 
+        projectData.setOraclePlatForm(MojoUtil.isOraclePlatform(host));
         projectData.setDomainName(domainName);
         projectData.setPackageName(packageName);
         projectData.setFieldMapping(streamConvert(fieldMapping));

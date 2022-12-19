@@ -30,6 +30,7 @@ public class JavaTemplate {
 
         String className = tableDescription.getName();
         String tableName = tableDescription.getTableName();
+        String tableSchema = tableDescription.getTableSchema();
 
         String tenantCode = tableDescription.getNamePrefix();
         String packageName = projectData.getPackageName();
@@ -65,7 +66,11 @@ public class JavaTemplate {
         } else if (StringUtils.isNotEmpty(tenantCode)) {
             stringBuilder.append("@Entity").append(MojoUtil.lineSeparator(1));
             stringBuilder.append("@TenantCode(TenantType.").append(tenantCode.toUpperCase()).append(")").append(MojoUtil.lineSeparator(1));
-            stringBuilder.append("@Table(name = \"").append(tableName).append("\"").append(")").append(MojoUtil.lineSeparator(1));
+            stringBuilder.append("@Table(name = \"").append(tableName).append("\"");
+            if (StringUtils.isNotEmpty(tableSchema) && projectData.isOraclePlatForm()) {
+                stringBuilder.append(", schema = \"").append(tableSchema).append("\"");
+            }
+            stringBuilder.append(")").append(MojoUtil.lineSeparator(1));
         }
 
         if (isEntityClassType) {
@@ -91,7 +96,7 @@ public class JavaTemplate {
                 continue;
             }
 
-            String columnType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType());
+            String columnType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType(), columnDescription.getSize());
             String fieldAnnotationTemplate = getFieldAnnotation(columnType);
 
             if (columnDescription.isIdentityColumn()) {
@@ -117,7 +122,7 @@ public class JavaTemplate {
     private void applyValidationAnnotation(ColumnDescription columnDescription, boolean isCommonClass, StringBuilder stringBuilder) {
 
         String name = columnDescription.getName();
-        String javaType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType());
+        String javaType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType(), columnDescription.getSize());
 
         boolean required = columnDescription.isRequired();
 
@@ -176,7 +181,7 @@ public class JavaTemplate {
     private String getFieldTemplate(ColumnDescription columnDescription, Map<String, String> fieldMapping) {
 
         String name = resolveFiledName(columnDescription.getName(), fieldMapping);
-        String fieldType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType());
+        String fieldType = resolveFiledType(columnDescription.getJavaType(), columnDescription.getSqlType(), columnDescription.getSize());
 
         return String.format("private %s %s;", fieldType, name);
     }
@@ -256,12 +261,17 @@ public class JavaTemplate {
         return WordUtils.uncapitalize(snakeWord);
     }
 
-    private String resolveFiledType(String javaType, String sqlType) {
+    private String resolveFiledType(String javaType, String sqlType, int size) {
 
         switch (javaType) {
             case "java.sql.Timestamp":
                 return LocalDateTime.class.getSimpleName();
             case "java.math.BigDecimal":
+
+                if (size == 1) {
+                    return Boolean.class.getSimpleName();
+                }
+
                 return BigDecimal.class.getSimpleName();
             case "java.lang.Long":
             case "java.lang.Integer":

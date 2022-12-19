@@ -44,7 +44,8 @@ public class JdbcMetadataService {
                 String columnSqlTypeName = columns.getColumnTypeName(index);
                 String columnTypeName = columns.getColumnClassName(index);
                 int isNullable = columns.isNullable(index);
-                int columnDisplaySize = columns.getColumnDisplaySize(index);
+               // int columnDisplaySize = columns.getColumnDisplaySize(index);
+                int columnDisplaySize = columns.getPrecision(index);
 
                 boolean identityColumn = columns.isAutoIncrement(index);
 

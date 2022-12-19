@@ -16,6 +16,8 @@ public class TableDescription {
 
     private String databaseName;
 
+    private String tableSchema;
+
     private List<ColumnDescription> columns = new ArrayList<>();
 
     private String extendsClassName;

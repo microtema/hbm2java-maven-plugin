@@ -60,6 +60,17 @@ public class MojoUtil {
         return null;
     }
 
+    public static String getTableSchema(String tableName) {
+
+        String[] parts = tableName.split("\\:");
+
+        if (parts.length > 1) {
+            return parts[1];
+        }
+
+        return null;
+    }
+
     public static String getDatabaseName(String tableName) {
 
         String[] parts = tableName.split("\\:");
@@ -118,6 +129,11 @@ public class MojoUtil {
         }
 
         return userName;
+    }
+
+    public static boolean isOraclePlatform(String host) {
+
+        return StringUtils.contains(host, "oracle");
     }
 
     public static String getJdbcDriver(String host) {

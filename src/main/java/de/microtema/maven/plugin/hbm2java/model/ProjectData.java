@@ -21,4 +21,6 @@ public class ProjectData {
     private List<String> interfaceNames = new ArrayList<>();
 
     private List<String> excludes = new ArrayList<>();
+
+    private boolean oraclePlatForm;
 }
