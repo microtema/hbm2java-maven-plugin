@@ -64,12 +64,17 @@ public class JavaTemplate {
         if (isCommonClass) {
             stringBuilder.append("@MappedSuperclass").append(MojoUtil.lineSeparator(1));
         } else if (StringUtils.isNotEmpty(tenantCode)) {
+
             stringBuilder.append("@Entity").append(MojoUtil.lineSeparator(1));
+
             stringBuilder.append("@TenantCode(TenantType.").append(tenantCode.toUpperCase()).append(")").append(MojoUtil.lineSeparator(1));
+
             stringBuilder.append("@Table(name = \"").append(tableName).append("\"");
+
             if (StringUtils.isNotEmpty(tableSchema) && projectData.isOraclePlatForm()) {
                 stringBuilder.append(", schema = \"").append(tableSchema).append("\"");
             }
+
             stringBuilder.append(")").append(MojoUtil.lineSeparator(1));
         }
 
@@ -272,7 +277,7 @@ public class JavaTemplate {
                     return Boolean.class.getSimpleName();
                 }
 
-                return BigDecimal.class.getSimpleName();
+                return resolveFiledTypeFromSQlType(sqlType);
             case "java.lang.Long":
             case "java.lang.Integer":
                 return Long.class.getSimpleName();
@@ -294,6 +299,8 @@ public class JavaTemplate {
             case "image":
                 return byte[].class.getSimpleName();
             case "bigint":
+            case "number":
+            case "NUMBER":
                 return Long.class.getSimpleName();
             default:
                 return sqlType;
@@ -363,11 +370,11 @@ public class JavaTemplate {
                 imports.add(null);
 
                 if (containFields) {
-                    imports.add("javax.persistence.Column");
+                    imports.add("jakarta.persistence.Column");
                 }
 
-                imports.add("javax.persistence.Entity");
-                imports.add("javax.persistence.Table");
+                imports.add("jakarta.persistence.Entity");
+                imports.add("jakarta.persistence.Table");
 
             } else {
 
@@ -376,13 +383,13 @@ public class JavaTemplate {
                 imports.add(null);
 
                 if (isIdentityColumn) {
-                    imports.add("javax.persistence.GeneratedValue");
-                    imports.add("javax.persistence.GenerationType");
-                    imports.add("javax.persistence.Id");
-                    imports.add("javax.persistence.MappedSuperclass");
+                    imports.add("jakarta.persistence.GeneratedValue");
+                    imports.add("jakarta.persistence.GenerationType");
+                    imports.add("jakarta.persistence.Id");
+                    imports.add("jakarta.persistence.MappedSuperclass");
                 } else {
-                    imports.add("javax.persistence.Column");
-                    imports.add("javax.persistence.Embeddable");
+                    imports.add("jakarta.persistence.Column");
+                    imports.add("jakarta.persistence.Embeddable");
                 }
             }
 
@@ -415,13 +422,13 @@ public class JavaTemplate {
 
         if (!columns.isEmpty() && isEntityType) {
 
-            packages.add("javax.persistence.Column");
+            packages.add("jakarta.persistence.Column");
 
             if (isIdentityColumn) {
 
-                packages.add("javax.persistence.GeneratedValue");
-                packages.add("javax.persistence.GenerationType");
-                packages.add("javax.persistence.Id");
+                packages.add("jakarta.persistence.GeneratedValue");
+                packages.add("jakarta.persistence.GenerationType");
+                packages.add("jakarta.persistence.Id");
             }
         }
 
@@ -429,12 +436,12 @@ public class JavaTemplate {
                 .anyMatch(it -> StringUtils.equals(it.getJavaType(), byte[].class.getName()));
 
         if (anyMatch) {
-            packages.add("javax.persistence.Lob");
+            packages.add("jakarta.persistence.Lob");
         }
 
         if (isSuperClass) {
 
-            packages.add("javax.persistence.MappedSuperclass");
+            packages.add("jakarta.persistence.MappedSuperclass");
         }
 
         anyMatch = columns.stream().anyMatch(it -> hasValidationAnnotation(it, isSuperClass));
@@ -444,7 +451,7 @@ public class JavaTemplate {
         }
 
         anyMatch = columns.stream()
-                .anyMatch(it -> StringUtils.equals(it.getJavaType(), BigDecimal.class.getName()));
+                .anyMatch(it -> StringUtils.equals(it.getJavaType(), BigDecimal.class.getName()) && !StringUtils.equalsIgnoreCase(it.getSqlType(), "NUMBER"));
 
         if (anyMatch) {
             packages.add("java.math.BigDecimal");
