@@ -22,5 +22,7 @@ public class ProjectData {
 
     private List<String> excludes = new ArrayList<>();
 
+    private List<String> includes = new ArrayList<>();
+
     private boolean oraclePlatForm;
 }

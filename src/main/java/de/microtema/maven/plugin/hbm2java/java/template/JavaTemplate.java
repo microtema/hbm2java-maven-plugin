@@ -43,6 +43,7 @@ public class JavaTemplate {
         boolean isEntityClassType = StringUtils.contains(className, "Entity");
 
         List<String> excludes = projectData.getExcludes();
+        List<String> includes = projectData.getIncludes();
 
         if (StringUtils.isNotEmpty(tenantCode)) {
             packageName += "." + tenantCode.toLowerCase();
@@ -98,6 +99,10 @@ public class JavaTemplate {
             String name = columnDescription.getName();
 
             if (excludes.contains(name)) {
+                continue;
+            }
+
+            if (!includes.isEmpty() && !includes.contains(name)) {
                 continue;
             }
 

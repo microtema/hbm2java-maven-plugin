@@ -51,8 +51,11 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
     @Parameter(property = "excludes")
     List<String> excludes = new ArrayList<>();
 
+    @Parameter(property = "includes")
+    List<String> includes = new ArrayList<>();
+
     @Parameter(property = "field-mapping")
-    Properties fieldMapping = new Properties();
+    List<String> fieldMapping = new ArrayList<>();
 
     @Parameter(property = "domain-name")
     String domainName;
@@ -118,17 +121,21 @@ public class Hbm2JavaGeneratorMojo extends AbstractMojo {
         projectData.setOutputJavaDirectory(outputDir);
         projectData.setInterfaceNames(interfaceNames.stream().map(String::trim).collect(Collectors.toList()));
         projectData.setExcludes(excludes.stream().map(String::trim).collect(Collectors.toList()));
+        projectData.setIncludes(includes.stream().map(String::trim).collect(Collectors.toList()));
 
         javaTemplateService.writeJavaTemplates(tableDescriptions, projectData);
     }
 
-    public Map<String, String> streamConvert(Properties prop) {
-        return prop.entrySet().stream().collect(
-                Collectors.toMap(
-                        e -> String.valueOf(e.getKey()),
-                        e -> String.valueOf(e.getValue()),
-                        (prev, next) -> next, HashMap::new
-                ));
+    public Map<String, String> streamConvert(List<String> properties) {
+        return properties.stream()
+                .filter(StringUtils::isNotEmpty)
+                .map(it -> it.split("="))
+                .collect(
+                        Collectors.toMap(
+                                it -> it[0].trim(),
+                                it -> it[1].trim(),
+                                (prev, next) -> next, HashMap::new
+                        ));
     }
 
     void logMessage(String message) {
